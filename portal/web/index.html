@@ -3,104 +3,138 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<meta name="theme-color" content="#0b0f17">
+<meta name="theme-color" content="#ffffff">
 <meta name="robots" content="noindex,nofollow">
 <title>{{.Brand}}</title>
 <style>
   :root{
-    --bg:#0b0f17; --bg2:#111827; --card:#151c2b; --card2:#1b2436;
-    --line:#243049; --fg:#e8eefc; --dim:#8b9abcd9; --acc:#4f8cff; --acc2:#22d3ee;
-    --ok:#34d399; --warn:#fbbf24; --err:#f87171;
+    --bg:#f5f7fa;
+    --card:#ffffff;
+    --line:#e8edf5;
+    --line-strong:#dbe3ef;
+    --fg:#0f172a;
+    --fg2:#475569;
+    --dim:#8a97a8;
+    --acc:#2b6cff;
+    --acc-soft:rgba(43,108,255,.08);
+    --ok:#10b981;
+    --shadow:0 1px 2px rgba(16,24,40,.04), 0 4px 14px rgba(16,24,40,.05);
     --r:16px;
   }
   *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
-  html,body{margin:0;padding:0;background:
-     radial-gradient(1200px 600px at 15% -10%, #1b2a4a 0%, transparent 55%),
-     radial-gradient(900px 500px at 110% 10%, #123043 0%, transparent 50%),
-     var(--bg);
-     color:var(--fg);font:15px/1.55 -apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC","Hiragino Sans GB","Microsoft YaHei",sans-serif;}
+  html,body{margin:0;padding:0;background:var(--bg);color:var(--fg);
+    font:15px/1.55 -apple-system,BlinkMacSystemFont,"PingFang SC","Hiragino Sans GB","Microsoft YaHei","Segoe UI",sans-serif;
+    -webkit-font-smoothing:antialiased}
   a{color:var(--acc);text-decoration:none}
-  .wrap{max-width:860px;margin:0 auto;padding:22px 16px 64px}
-  header{display:flex;align-items:center;gap:10px;margin-bottom:18px}
-  .logo{width:38px;height:38px;border-radius:12px;background:linear-gradient(135deg,var(--acc),var(--acc2));
-        display:grid;place-items:center;font-weight:800;color:#04101f;font-size:17px;letter-spacing:.5px}
-  .brand{font-size:17px;font-weight:700;letter-spacing:.3px}
-  .sub{font-size:12px;color:var(--dim)}
-  .pill{margin-left:auto;font-size:12px;padding:5px 11px;border-radius:999px;border:1px solid var(--line);
-        color:var(--dim);display:flex;align-items:center;gap:6px;white-space:nowrap}
-  .dot{width:7px;height:7px;border-radius:50%;background:var(--ok);box-shadow:0 0 0 3px #34d39922}
-  .card{background:linear-gradient(180deg,var(--card),var(--card2));border:1px solid var(--line);
-        border-radius:var(--r);padding:16px;margin-bottom:14px}
-  h2{font-size:14px;margin:0 0 12px;color:var(--dim);font-weight:600;letter-spacing:.4px;text-transform:uppercase}
-  .stats{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
-  .stat{background:#0f1626;border:1px solid var(--line);border-radius:12px;padding:11px 12px}
-  .stat .k{font-size:11px;color:var(--dim);margin-bottom:3px}
-  .stat .v{font-size:15px;font-weight:700;font-variant-numeric:tabular-nums}
-  .bar{height:7px;border-radius:999px;background:#0b1120;overflow:hidden;margin-top:12px;border:1px solid var(--line)}
-  .bar>i{display:block;height:100%;background:linear-gradient(90deg,var(--acc),var(--acc2));width:0}
-  .btnrow{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-top:12px}
-  .btn{display:flex;align-items:center;justify-content:center;gap:6px;padding:11px 8px;border-radius:12px;
-       background:#0f1626;border:1px solid var(--line);color:var(--fg);font-size:13px;font-weight:600;cursor:pointer;
-       transition:.15s transform,.15s border-color}
-  .btn:active{transform:scale(.98)}
-  .btn.primary{background:linear-gradient(135deg,#2b6cff,#22d3ee);color:#04101f;border:none}
-  .btn:hover{border-color:#3a4b6e}
-  .apps{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:8px}
-  .app{display:flex;align-items:center;gap:9px;padding:10px 12px;border-radius:12px;background:#0f1626;
-       border:1px solid var(--line);color:var(--fg);font-size:13.5px;font-weight:600;cursor:pointer}
-  .app small{display:block;font-size:10.5px;color:var(--dim);font-weight:400}
-  .app .ic{width:26px;height:26px;border-radius:8px;background:#1c2740;display:grid;place-items:center;
-           font-size:11px;font-weight:800;color:var(--acc2)}
-  .node{display:flex;align-items:center;gap:12px;padding:13px;border-radius:12px;background:#0f1626;
-        border:1px solid var(--line);margin-bottom:8px}
-  .badge{font-size:10.5px;font-weight:800;letter-spacing:.5px;padding:4px 8px;border-radius:7px;
-         background:#1b2b4a;color:#9dc0ff;white-space:nowrap}
-  .badge.hysteria2{background:#3a1f3d;color:#f0abfc}
-  .badge.shadowsocks{background:#1d3326;color:#86efac}
-  .badge.trojan{background:#3a2a1a;color:#fcd34d}
-  .badge.vmess{background:#2a2440;color:#c4b5fd}
-  .badge.tuic{background:#0e2f33;color:#67e8f9}
-  .badge.mtproto{background:#1f2a44;color:#93c5fd}
-  .nodename{font-weight:600;font-size:14px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-  .nodeaddr{font-size:11.5px;color:var(--dim);font-variant-numeric:tabular-nums}
-  .nodebtns{margin-left:auto;display:flex;gap:6px}
-  .mini{padding:7px 11px;border-radius:9px;background:#182338;border:1px solid var(--line);font-size:12px;
-        font-weight:600;cursor:pointer;color:var(--fg)}
-  .hint{font-size:12px;color:var(--dim);margin-top:10px;line-height:1.7}
-  .toast{position:fixed;left:50%;bottom:28px;transform:translate(-50%,20px);background:#1b2436;border:1px solid var(--line);
-         padding:11px 18px;border-radius:12px;font-size:13px;opacity:0;pointer-events:none;transition:.22s;z-index:99}
+  .wrap{max-width:720px;margin:0 auto;padding:20px 16px 56px}
+
+  /* ---------- 头部 ---------- */
+  header{display:flex;align-items:center;gap:11px;margin-bottom:16px}
+  .logo{width:40px;height:40px;border-radius:12px;background:linear-gradient(135deg,#2b6cff,#22d3ee);
+        display:grid;place-items:center;font-weight:800;color:#fff;font-size:17px;letter-spacing:.5px;
+        box-shadow:0 4px 12px rgba(43,108,255,.25)}
+  .brand{font-size:16.5px;font-weight:700;letter-spacing:.2px}
+  .sub{font-size:12px;color:var(--dim);margin-top:1px}
+  .pill{margin-left:auto;font-size:12px;padding:6px 12px;border-radius:999px;background:#fff;
+        border:1px solid var(--line);color:var(--fg2);display:flex;align-items:center;gap:6px;
+        box-shadow:var(--shadow);white-space:nowrap}
+  .dot{width:7px;height:7px;border-radius:50%;background:var(--ok)}
+
+  /* ---------- 卡片 ---------- */
+  .card{background:var(--card);border:1px solid var(--line);border-radius:var(--r);
+        padding:18px;margin-bottom:14px;box-shadow:var(--shadow)}
+  h2{font-size:12px;margin:0 0 14px;color:var(--dim);font-weight:700;letter-spacing:.8px;text-transform:uppercase}
+
+  /* ---------- 状态 ---------- */
+  .stats{display:grid;grid-template-columns:repeat(3,1fr);gap:9px}
+  .stat{background:#f8fafc;border:1px solid #eef2f8;border-radius:12px;padding:11px 12px}
+  .stat .k{font-size:11px;color:var(--dim);margin-bottom:4px}
+  .stat .v{font-size:15px;font-weight:700;font-variant-numeric:tabular-nums;letter-spacing:-.2px}
+  .stat .v small{font-size:11.5px;color:var(--dim);font-weight:500}
+  .bar{height:6px;border-radius:999px;background:#eef2f8;overflow:hidden;margin-top:14px}
+  .bar>i{display:block;height:100%;background:linear-gradient(90deg,#2b6cff,#22d3ee);width:0;
+         border-radius:999px;transition:width .4s ease}
+  .btnrow{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-top:14px}
+  .btn{display:flex;align-items:center;justify-content:center;gap:6px;padding:11px 8px;border-radius:11px;
+       background:#fff;border:1px solid var(--line-strong);color:var(--fg2);font-size:13px;font-weight:600;
+       cursor:pointer;transition:.15s}
+  .btn:active{transform:scale(.985)}
+  .btn.primary{background:var(--acc);border-color:var(--acc);color:#fff;
+               box-shadow:0 4px 12px rgba(43,108,255,.22)}
+  .btn:hover{border-color:#c9d4e6}
+  .btn.primary:hover{border-color:var(--acc)}
+  .hint{font-size:12px;color:var(--dim);margin-top:12px;line-height:1.75}
+  .hint code{color:var(--acc);word-break:break-all;background:var(--acc-soft);
+             padding:2px 6px;border-radius:6px;font-size:11.5px}
+
+  /* ---------- 节点列表 ---------- */
+  .nodes{display:flex;flex-direction:column;gap:8px}
+  .node{display:flex;align-items:center;gap:12px;padding:12px 13px;background:#fff;
+        border:1px solid var(--line);border-radius:13px;transition:.15s}
+  .node:hover{border-color:var(--line-strong);background:#fcfdff}
+  .node-icon{width:42px;height:42px;border-radius:11px;display:grid;place-items:center;
+             font-size:12.5px;font-weight:800;letter-spacing:.3px;flex:0 0 auto}
+  .node-icon.vless{background:rgba(43,108,255,.10);color:#2b6cff}
+  .node-icon.hysteria2{background:rgba(139,92,246,.11);color:#7c3aed}
+  .node-icon.trojan{background:rgba(245,158,11,.13);color:#d97706}
+  .node-icon.shadowsocks{background:rgba(16,185,129,.12);color:#059669}
+  .node-icon.vmess{background:rgba(100,116,139,.12);color:#475569}
+  .node-icon.mtproto{background:rgba(14,165,233,.12);color:#0284c7}
+  .node-body{min-width:0;flex:1}
+  .nodename{font-size:14.5px;font-weight:600;color:var(--fg);overflow:hidden;
+            text-overflow:ellipsis;white-space:nowrap;letter-spacing:-.1px}
+  .nodeaddr{font-size:11.5px;color:var(--dim);font-variant-numeric:tabular-nums;margin-top:2px;
+            overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .nodebtns{display:flex;gap:6px;flex:0 0 auto}
+  .mini{padding:7px 12px;border-radius:9px;background:#fff;border:1px solid var(--line-strong);
+        font-size:12px;font-weight:600;color:var(--fg2);cursor:pointer;transition:.15s}
+  .mini:hover{border-color:var(--acc);color:var(--acc)}
+  .mini:active{transform:scale(.97)}
+
+  /* ---------- 浮层 ---------- */
+  .toast{position:fixed;left:50%;bottom:30px;transform:translate(-50%,18px);background:#0f172a;
+         color:#fff;padding:11px 20px;border-radius:11px;font-size:13px;opacity:0;pointer-events:none;
+         transition:.22s;z-index:99;box-shadow:0 8px 24px rgba(15,23,42,.25)}
   .toast.show{opacity:1;transform:translate(-50%,0)}
-  .sheet{position:fixed;inset:0;background:#000a;display:none;place-items:center;z-index:100;padding:20px}
+  .sheet{position:fixed;inset:0;background:rgba(15,23,42,.45);backdrop-filter:blur(2px);
+         display:none;place-items:center;z-index:100;padding:20px}
   .sheet.show{display:grid}
-  .sheet .box{background:var(--card);border:1px solid var(--line);border-radius:18px;padding:18px;text-align:center;max-width:320px}
-  .sheet img{width:220px;height:220px;background:#fff;border-radius:12px;display:block;margin:0 auto 12px}
-  .sheet .txt{font-size:11.5px;color:var(--dim);word-break:break-all;text-align:left;max-height:70px;overflow:auto}
-  footer{text-align:center;font-size:11.5px;color:#5b6b8c;margin-top:26px;line-height:1.9}
+  .sheet .box{background:#fff;border-radius:18px;padding:20px;text-align:center;max-width:330px;
+              width:100%;box-shadow:0 20px 60px rgba(15,23,42,.25)}
+  .sheet img{width:224px;height:224px;background:#fff;border-radius:12px;display:block;margin:0 auto 14px}
+  .sheet .txt{font-size:11px;color:var(--dim);word-break:break-all;text-align:left;max-height:64px;
+              overflow:auto;background:#f8fafc;border-radius:8px;padding:8px 10px}
+  footer{text-align:center;font-size:11.5px;color:#a8b3c4;margin-top:24px;line-height:1.9}
+
   @media(max-width:520px){
+    .wrap{padding:16px 13px 48px}
+    .card{padding:15px}
     .stats{grid-template-columns:1fr 1fr}
     .stats .stat:nth-child(3){grid-column:span 2}
     .btnrow{grid-template-columns:1fr 1fr}
     .btnrow .btn:first-child{grid-column:span 2}
+    .node{padding:11px;gap:10px}
+    .node-icon{width:38px;height:38px;font-size:11.5px}
+    .mini{padding:6px 10px;font-size:11.5px}
   }
 </style>
 </head>
-<body>
+<body data-theme="light">
 <div class="wrap">
 
   <header>
-    <div class="logo">x</div>
+    <div class="logo">R</div>
     <div>
       <div class="brand">{{.Brand}}</div>
-      <div class="sub">{{.Host}} · 更新于 {{.Now}}</div>
+      <div class="sub">{{.Host}} · {{.Now}}</div>
     </div>
-    <div class="pill"><span class="dot" style="{{if not .Online}}background:#f87171;box-shadow:0 0 0 3px #f8717122{{end}}"></span>{{if .Online}}运行中{{else}}无节点{{end}}</div>
+    <div class="pill"><span class="dot" style="{{if not .Online}}background:#f87171{{end}}"></span>{{if .Online}}运行中{{else}}无节点{{end}}</div>
   </header>
 
-  <!-- 状态 -->
   <section class="card">
     <h2>订阅状态</h2>
     <div class="stats">
-      <div class="stat"><div class="k">已使用 / 总量</div><div class="v">{{.Used}} <span style="color:#8b9abc;font-weight:500;font-size:12px">/ {{.Total}}</span></div></div>
+      <div class="stat"><div class="k">已使用 / 总量</div><div class="v">{{.Used}} <small>/ {{.Total}}</small></div></div>
       <div class="stat"><div class="k">到期时间</div><div class="v">{{.Expire}}</div></div>
       <div class="stat"><div class="k">上行 / 下行</div><div class="v" style="font-size:13px">{{.Up}} / {{.Down}}</div></div>
     </div>
@@ -111,48 +145,35 @@
       <button class="btn" data-copy="{{.JSONURL}}">Sing-box</button>
     </div>
     <div class="hint">
-      订阅地址通用：<code style="color:#9dc0ff;word-break:break-all">{{.SubURL}}</code><br>
-      粘贴到任意客户端即可自动获取全部 {{len .Nodes}} 个节点；客户端会自动按 UA 返回 Clash / sing-box / 原始格式。
+      订阅地址：<code>{{.SubURL}}</code><br>
+      粘贴到任意客户端自动获取全部 {{len .Nodes}} 个节点。
     </div>
   </section>
 
-  <!-- 客户端一键导入 -->
-  <section class="card">
-    <h2>一键导入（手机点开即跳转）</h2>
-    <div class="apps">
-      {{range .Apps}}
-      <a class="app" href="{{.Scheme}}">
-        <span class="ic">{{.Abbr}}</span>
-        <span>{{.Name}}<small>{{.Note}}</small></span>
-      </a>
-      {{end}}
-    </div>
-    <div class="hint">桌面端推荐 Clash Verge / Mihomo Party / v2rayN：复制上方订阅链接 → 订阅 → 粘贴 → 更新。</div>
-  </section>
-
-  <!-- 节点 -->
   <section class="card">
     <h2>节点列表（{{len .Nodes}}）</h2>
-    {{range .Nodes}}
-    <div class="node">
-      <span class="badge {{.Kind}}">{{.Badge}}</span>
-      <div style="min-width:0">
-        <div class="nodename">{{.Remark}}</div>
-        <div class="nodeaddr">{{.Host}}</div>
+    <div class="nodes">
+      {{range .Nodes}}
+      <div class="node">
+        <div class="node-icon {{.Kind}}">{{slice .Badge 0 2}}</div>
+        <div class="node-body">
+          <div class="nodename">{{.Remark}}</div>
+          <div class="nodeaddr">{{.Host}} · {{.Badge}}</div>
+        </div>
+        <div class="nodebtns">
+          <button class="mini" data-copy="{{.Link}}">复制</button>
+          <button class="mini" data-qr="{{.QR}}" data-link="{{.Link}}">二维码</button>
+        </div>
       </div>
-      <div class="nodebtns">
-        <button class="mini" data-copy="{{.Link}}">复制</button>
-        <button class="mini" data-qr="{{.QR}}" data-link="{{.Link}}">二维码</button>
-      </div>
+      {{else}}
+      <div class="hint">暂无节点。</div>
+      {{end}}
     </div>
-    {{else}}
-    <div class="hint">暂无节点，等安装脚本执行完成或联系管理员。</div>
-    {{end}}
   </section>
 
   <footer>
-    {{.Brand}} · 单设备使用，请勿分享订阅链接<br>
-    订阅泄露等同账号泄露，可在面板重置 subId
+    {{.Brand}} · 订阅仅限本人使用，请勿分享<br>
+    订阅泄露等同账号泄露
   </footer>
 </div>
 
@@ -169,7 +190,12 @@
 (function(){
   var toast=document.getElementById('toast'),t;
   function say(m){toast.textContent=m;toast.classList.add('show');clearTimeout(t);t=setTimeout(function(){toast.classList.remove('show')},1600)}
-
+  function fallback(v){
+    var ta=document.createElement('textarea');ta.value=v;ta.style.position='fixed';ta.style.opacity='0';
+    document.body.appendChild(ta);ta.select();
+    try{document.execCommand('copy');say('已复制')}catch(_){say('复制失败，请长按选择')}
+    document.body.removeChild(ta);
+  }
   document.addEventListener('click',function(e){
     var b=e.target.closest('[data-copy]');
     if(b){
@@ -188,14 +214,6 @@
     if(e.target.id==='sheet'){document.getElementById('sheet').classList.remove('show')}
   });
 
-  function fallback(v){
-    var ta=document.createElement('textarea');ta.value=v;ta.style.position='fixed';ta.style.opacity='0';
-    document.body.appendChild(ta);ta.select();
-    try{document.execCommand('copy');say('已复制')}catch(_){say('复制失败，请长按选择')}
-    document.body.removeChild(ta);
-  }
-
-  // 用量条
   var used="{{.Used}}", total="{{.Total}}";
   function bytes(s){
     if(!s)return 0;
@@ -205,8 +223,7 @@
     return n*Math.pow(1024,p[u]||0);
   }
   var u=bytes(used),tt=bytes(total);
-  if(tt>0){document.getElementById('usageBar').style.width=Math.min(100,(u/tt*100)).toFixed(1)+'%'}
-  else{document.getElementById('usageBar').style.width='8%'}
+  document.getElementById('usageBar').style.width = tt>0 ? Math.min(100,(u/tt*100)).toFixed(1)+'%' : '6%';
 })();
 </script>
 </body>

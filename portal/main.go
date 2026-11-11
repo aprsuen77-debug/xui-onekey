@@ -12,6 +12,7 @@ package main
 
 import (
 	"crypto/rand"
+	"crypto/tls"
 	"embed"
 	"encoding/base64"
 	"encoding/hex"
@@ -158,7 +159,13 @@ func apiURL(path string) string {
 	return fmt.Sprintf("%s%s/panel/api/%s", base, strings.Trim(bp, "/"), path)
 }
 
-var httpc = &http.Client{Timeout: 8 * time.Second}
+// 面板切到 HTTPS 后用的是自签证书，这里必须跳过校验，否则门户拉不到数据
+var httpc = &http.Client{
+	Timeout: 8 * time.Second,
+	Transport: &http.Transport{
+		TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
+	},
+}
 
 func panelGET(path string, out any) error {
 	req, err := http.NewRequest(http.MethodGet, apiURL(path), nil)
@@ -222,6 +229,43 @@ func qr(text string) string {
 	return "https://api.qrserver.com/v1/create-qr-code/?size=220x220&margin=8&data=" + esc(text)
 }
 
+// sanitizeForIOS 去掉小火箭可能不认的新参数。
+// 3x-ui 会给每条 reality 链接硬加 support-x25519mlkem768=true（xray 26 的 ML-KEM 特性），
+// 旧版 Shadowrocket 遇到不认识的参数会把整条链接判废。
+func sanitizeForIOS(link string) string {
+	if !strings.HasPrefix(link, "vless://") && !strings.HasPrefix(link, "trojan://") {
+		return link
+	}
+	base, frag := link, ""
+	if i := strings.Index(link, "#"); i >= 0 {
+		base, frag = link[:i], link[i:]
+	}
+	q := base
+	if i := strings.Index(base, "?"); i >= 0 {
+		q = base[i+1:]
+		base = base[:i]
+	}
+	keep := make([]string, 0, 16)
+	for _, kv := range strings.Split(q, "&") {
+		if kv == "" {
+			continue
+		}
+		k := kv
+		if j := strings.Index(kv, "="); j >= 0 {
+			k = kv[:j]
+		}
+		switch strings.ToLower(k) {
+		case "support-x25519mlkem768", "spx", "pcs", "pinSHA256":
+			continue
+		}
+		keep = append(keep, kv)
+	}
+	if len(keep) == 0 {
+		return base + frag
+	}
+	return base + "?" + strings.Join(keep, "&") + frag
+}
+
 func protocolBadge(p string) string {
 	switch strings.ToLower(p) {
 	case "vless":
@@ -256,6 +300,42 @@ func splitLink(link string) (kind, remark string) {
 		remark, _ = url.QueryUnescape(link[i+1:])
 	}
 	return
+}
+
+// parseVmessLink 解 vmess://<base64(json)>，取出备注(ps)与地址(addr:port)。
+// vmess 是唯一不把备注放在 #fragment 里的协议，不特判会显示成一坨 base64。
+func parseVmessLink(link string) (remark, addr string) {
+	raw := strings.TrimPrefix(link, "vmess://")
+	raw = strings.TrimSpace(raw)
+	if raw == "" {
+		return "", ""
+	}
+	var data []byte
+	var err error
+	for _, enc := range []*base64.Encoding{base64.StdEncoding, base64.RawStdEncoding, base64.URLEncoding, base64.RawURLEncoding} {
+		if data, err = enc.DecodeString(raw); err == nil {
+			break
+		}
+	}
+	if err != nil || len(data) == 0 {
+		return "", ""
+	}
+	var v struct {
+		PS   string      `json:"ps"`
+		Add  string      `json:"add"`
+		Port json.Number `json:"port"`
+	}
+	if err := json.Unmarshal(data, &v); err != nil {
+		return "", ""
+	}
+	if v.Add != "" {
+		if v.Port != "" {
+			addr = v.Add + ":" + v.Port.String()
+		} else {
+			addr = v.Add
+		}
+	}
+	return strings.TrimSpace(v.PS), addr
 }
 
 func hostFromLink(link string) string {
@@ -335,14 +415,26 @@ func loadSnapshot() (snapshot, error) {
 	seen := map[string]bool{}
 	for _, l := range links {
 		kind, remark := splitLink(l)
+		hp := hostFromLink(l)
+		if kind == "vmess" {
+			if r, a := parseVmessLink(l); r != "" || a != "" {
+				if r != "" {
+					remark = r
+				}
+				if a != "" {
+					hp = a
+				}
+			}
+		}
 		if remark == "" {
 			remark = strings.ToUpper(kind)
 		}
+		// 3x-ui 的备注模板会带 -<email> 尾巴，门户里去干净
+		remark = strings.TrimSuffix(remark, "-default")
 		if seen[l] {
 			continue
 		}
 		seen[l] = true
-		hp := hostFromLink(l)
 		snap.Nodes = append(snap.Nodes, NodeView{
 			Remark:   remark,
 			Protocol: kind,
@@ -416,8 +508,6 @@ func renderPortal(w http.ResponseWriter, r *http.Request, portalPath string) {
 	subURL := fmt.Sprintf("http://%s%s/sub/%s", host, portalPortSuffix(), snap.SubID)
 	clashURL := fmt.Sprintf("http://%s%s/clash/%s", host, portalPortSuffix(), snap.SubID)
 	jsonURL := fmt.Sprintf("http://%s%s/json/%s", host, portalPortSuffix(), snap.SubID)
-	name := cfg.Brand
-
 	pd := PageData{
 		Brand:      cfg.Brand,
 		Host:       host,
@@ -436,23 +526,6 @@ func renderPortal(w http.ResponseWriter, r *http.Request, portalPath string) {
 		Online:     len(snap.Nodes) > 0,
 		Now:        time.Now().Format("2006-01-02 15:04"),
 	}
-
-	// 客户端一键导入（scheme 来自 3x-ui 官方订阅页实现 + 社区通用值）
-	add := func(name, scheme, note, abbr string) {
-		pd.Apps = append(pd.Apps, AppView{Name: name, Scheme: template.URL(scheme), Note: note, Abbr: abbr})
-	}
-	add("v2rayNG", "v2rayng://install-config?url="+esc(subURL), "Android · Xray", "NG")
-	add("V2Box", "v2box://install-sub?url="+esc(subURL)+"&name="+esc(name), "Android / iOS", "V2")
-	add("Shadowrocket", "shadowrocket://add/sub://"+b64(subURL+"?flag=shadowrocket")+"?remark="+frag(name), "iOS · 小火箭", "SR")
-	add("Sing-box", "sing-box://import-remote-profile?url="+esc(subURL)+"#"+frag(name), "iOS / macOS / Android", "SB")
-	add("Streisand", "streisand://import/"+esc(subURL), "iOS / macOS", "ST")
-	add("Happ", "happ://add/"+subURL, "iOS / Android / 桌面", "HP")
-	add("V2RayTun", "v2raytun://import/"+subURL, "iOS / Android", "VT")
-	add("Incy", "incy://add/"+subURL, "iOS / Android", "IN")
-	add("Clash / Mihomo", "clash://install-config?url="+esc(clashURL), "Win / macOS / Android", "CL")
-	add("Hiddify", "hiddify://install-config/?url="+esc(subURL), "全平台 · sing-box", "HD")
-	add("Karing", "karing://install-config?url="+esc(subURL)+"&name="+esc(name), "全平台", "KR")
-	add("NekoRay", "sn://subscription?url="+esc(subURL)+"&name="+esc(name), "Windows / Linux", "NK")
 
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
 	w.Header().Set("Cache-Control", "no-store")
@@ -476,6 +549,10 @@ func newSubProxy(prefix, upstreamPath string) *httputil.ReverseProxy {
 		log.Fatalf("subUpstream 非法: %v", err)
 	}
 	p := httputil.NewSingleHostReverseProxy(target)
+	// 上游订阅服务可能也切到了 HTTPS（自签），这里同样跳过校验
+	p.Transport = &http.Transport{
+		TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
+	}
 	orig := p.Director
 	p.Director = func(r *http.Request) {
 		orig(r)
@@ -538,6 +615,35 @@ func main() {
 	mux.Handle("/json/", newSubProxy("/json/", "/json/"))
 	mux.Handle("/clash/", newSubProxy("/clash/", "/clash/"))
 	mux.Handle("/assets/", newSubProxy("/assets/", "/assets/"))
+
+	// 小火箭专用订阅：拉 3x-ui 的原始链接，去掉它可能不认识的新参数后 base64 返回
+	mux.HandleFunc("/ios/", func(w http.ResponseWriter, r *http.Request) {
+		subID := strings.TrimPrefix(r.URL.Path, "/ios/")
+		if subID == "" || strings.ContainsAny(subID, "/?#") {
+			http.NotFound(w, r)
+			return
+		}
+		var links []string
+		if err := panelGET("inbounds/allLinks", &links); err != nil {
+			http.Error(w, "upstream unavailable", http.StatusBadGateway)
+			return
+		}
+		var clean []string
+		seen := map[string]bool{}
+		for _, l := range links {
+			c := sanitizeForIOS(l)
+			if seen[c] {
+				continue
+			}
+			seen[c] = true
+			clean = append(clean, c)
+		}
+		body := strings.Join(clean, "\n")
+		w.Header().Set("Content-Type", "text/plain; charset=utf-8")
+		w.Header().Set("Cache-Control", "no-store")
+		w.Header().Set("Profile-Update-Interval", "12")
+		_, _ = w.Write([]byte(base64.StdEncoding.EncodeToString([]byte(body))))
+	})
 
 	mux.HandleFunc("/healthz", func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")

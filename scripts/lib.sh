@@ -158,7 +158,7 @@ ok_fetch_any() {
 xo_api() { # method path [json]
   local method="$1" path="$2" data="${3:-}"
   local url="${XO_PANEL_URL}${XO_BASE_PATH}panel/api/${path}"
-  local args=(-sS -X "$method" "$url"
+  local args=(-sS -k -X "$method" "$url"
     -H "Authorization: Bearer ${XO_API_TOKEN}"
     -H 'Content-Type: application/json'
     -H 'Accept: application/json'
@@ -202,7 +202,12 @@ ok_load_panel_ctx() {
   XO_BASE_PATH="${bp:-/}"
   [[ "$XO_BASE_PATH" == /* ]] || XO_BASE_PATH="/${XO_BASE_PATH}"
   [[ "$XO_BASE_PATH" == */ ]] || XO_BASE_PATH="${XO_BASE_PATH}/"
-  XO_PANEL_URL="http://127.0.0.1:${XO_PANEL_PORT}"
+  # 探测面板是 http 还是 https（装过一次后可能已经切到 HTTPS）
+  if curl -sk -o /dev/null --max-time 3 "https://127.0.0.1:${XO_PANEL_PORT}/" 2>/dev/null; then
+    XO_PANEL_URL="https://127.0.0.1:${XO_PANEL_PORT}"
+  else
+    XO_PANEL_URL="http://127.0.0.1:${XO_PANEL_PORT}"
+  fi
   ok_resolve_api_token
 }
 
