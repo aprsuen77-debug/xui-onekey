@@ -778,7 +778,7 @@ stage_finish() {
     echo "面板地址   : ${PANEL_SCHEME:-http}://${XO_HOST}:${PANEL_PORT}${XO_BASE_PATH}"
     echo "面板账号   : ${ADMIN_USER}"
     if [[ "${PANEL_FRESH_INSTALL:-1}" == "1" ]]; then
-      echo "面板密码   : ${ADMIN_PASS}   （首次登录会强制要求修改）"
+      echo "面板密码   : ${ADMIN_PASS}"
     else
       echo "面板密码   : 沿用原有密码（如需重置：x-ui setting -username admin -password 新密码）"
     fi
