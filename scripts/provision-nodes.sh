@@ -197,7 +197,7 @@ ss_client() {
 
 # ---------------- 各协议 payload ----------------
 payload_reality() {
-  jq -nc --arg remark "${XO_REMARK_PREFIX}REALITY-${XO_P_REALITY}" --arg host "$XO_HOST" \
+  jq -nc --arg remark "${XO_REMARK_PREFIX}${XO_HOST}-VLESS" --arg host "$XO_HOST" \
     --argjson port "$XO_P_REALITY" --arg tag "xo-vless-reality" --argjson sniff "$sniffing" \
     --argjson client "$(client_body '{"flow":"xtls-rprx-vision"}')" \
     --arg priv "$R_PRIV" --arg pub "$R_PUB" --arg sid "$R_SID" \
@@ -221,7 +221,7 @@ payload_reality() {
 payload_hy2() {
   local cert_json
   cert_json="$(tls_block "$XO_HOST" '["h3"]')"
-  jq -nc --arg remark "${XO_REMARK_PREFIX}HY2-${XO_P_HY2}" --arg host "$XO_HOST" \
+  jq -nc --arg remark "${XO_REMARK_PREFIX}${XO_HOST}-HY2" --arg host "$XO_HOST" \
     --argjson port "$XO_P_HY2" --arg tag "xo-hysteria2" --argjson sniff "$sniffing" \
     --arg auth "$XO_HY2_AUTH" --argjson tls "$cert_json" \
     --arg email "$XO_CLIENT_EMAIL" --arg sub "$XO_SUBID" --arg pwd "$XO_SS_CLIENT_KEY" --arg id "$XO_UUID" '
@@ -241,7 +241,7 @@ payload_hy2() {
 payload_ws() {
   local cert_json
   cert_json="$(tls_block "$XO_HOST" '["http/1.1"]')"
-  jq -nc --arg remark "${XO_REMARK_PREFIX}VLESS-WS-${XO_P_WS}" --arg host "$XO_HOST" \
+  jq -nc --arg remark "${XO_REMARK_PREFIX}${XO_HOST}-WS" --arg host "$XO_HOST" \
     --argjson port "$XO_P_WS" --arg tag "xo-vless-ws" --argjson sniff "$sniffing" \
     --argjson client "$(client_body)" --argjson tls "$cert_json" --arg path "$XO_WS_PATH" '
   {
@@ -260,7 +260,7 @@ payload_ws() {
 payload_trojan() {
   local cert_json
   cert_json="$(tls_block "$XO_HOST" '["http/1.1"]')"
-  jq -nc --arg remark "${XO_REMARK_PREFIX}TROJAN-${XO_P_TROJAN}" --arg host "$XO_HOST" \
+  jq -nc --arg remark "${XO_REMARK_PREFIX}${XO_HOST}-TROJAN" --arg host "$XO_HOST" \
     --argjson port "$XO_P_TROJAN" --arg tag "xo-trojan-ws" --argjson sniff "$sniffing" \
     --arg pwd "$XO_SS_CLIENT_KEY" --arg email "$XO_CLIENT_EMAIL" --arg id "$XO_UUID" --arg sub "$XO_SUBID" \
     --argjson tls "$cert_json" --arg path "$XO_TROJAN_PATH" '
@@ -278,7 +278,7 @@ payload_trojan() {
 }
 
 payload_ss() {
-  jq -nc --arg remark "${XO_REMARK_PREFIX}SS2022-${XO_P_SS}" --arg host "$XO_HOST" \
+  jq -nc --arg remark "${XO_REMARK_PREFIX}${XO_HOST}-SS" --arg host "$XO_HOST" \
     --argjson port "$XO_P_SS" --arg tag "xo-ss2022" --argjson sniff "$sniffing" \
     --argjson client "$(ss_client)" --arg key "$XO_SS_KEY" '
   {
@@ -293,7 +293,7 @@ payload_ss() {
 payload_vmess() {
   local cert_json
   cert_json="$(tls_block "$XO_HOST" '["http/1.1"]')"
-  jq -nc --arg remark "${XO_REMARK_PREFIX}VMESS-WS-${XO_P_VMESS}" --arg host "$XO_HOST" \
+  jq -nc --arg remark "${XO_REMARK_PREFIX}${XO_HOST}-VMESS" --arg host "$XO_HOST" \
     --argjson port "$XO_P_VMESS" --arg tag "xo-vmess-ws" --argjson sniff "$sniffing" \
     --arg id "$XO_UUID" --arg email "$XO_CLIENT_EMAIL" --arg sub "$XO_SUBID" --arg pwd "$XO_SS_CLIENT_KEY" \
     --argjson tls "$cert_json" --arg path "$XO_VMESS_PATH" '
@@ -313,7 +313,7 @@ payload_vmess() {
 payload_xhttp() {
   local cert_json
   cert_json="$(tls_block "$XO_HOST" '["h2","http/1.1"]')"
-  jq -nc --arg remark "${XO_REMARK_PREFIX}XHTTP-${XO_P_XHTTP}" --arg host "$XO_HOST" \
+  jq -nc --arg remark "${XO_REMARK_PREFIX}${XO_HOST}-XHTTP" --arg host "$XO_HOST" \
     --argjson port "$XO_P_XHTTP" --arg tag "xo-vless-xhttp" --argjson sniff "$sniffing" \
     --argjson client "$(client_body)" --argjson tls "$cert_json" --arg path "$XO_XHTTP_PATH" '
   {

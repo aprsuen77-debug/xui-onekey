@@ -14,10 +14,18 @@ else
   C_R=''; C_G=''; C_Y=''; C_B=''; C_C=''; C_0=''
 fi
 
-# 诊断信息一律写 stderr：脚本里大量 CRT="$(ensure_self_signed)" 这类捕获，
-# 日志混进 stdout 会污染返回值（曾经把 "生成自签证书..." 拼进证书路径）
-ok_log()  { printf '%s[+]%s %s\n' "$C_G" "$C_0" "$*" >&2; }
-ok_info() { printf '%s[·]%s %s\n' "$C_B" "$C_0" "$*" >&2; }
+# 安装过程输出：一律进日志文件，终端只保留动态进度条 + 最终结果。
+# 这样客户执行时看到的是干净的进度条，细节出问题时再翻日志。
+XUI_LOG="${XUI_LOG:-/var/log/routex-install.log}"
+_ui_log() {
+  local line
+  line="$(date '+%H:%M:%S') $*"
+  printf '%s\n' "$line" >>"$XUI_LOG" 2>/dev/null || true
+}
+ok_log()  { _ui_log "[+] $*"; }
+ok_info() { _ui_log "[·] $*"; }
+# 需要让用户立刻看到的（错误/警告）才走终端
+ok_note() { printf '%s[·]%s %s\n' "$C_B" "$C_0" "$*"; }
 ok_warn() { printf '%s[!]%s %s\n' "$C_Y" "$C_0" "$*" >&2; }
 ok_die()  { printf '%s[x]%s %s\n' "$C_R" "$C_0" "$*" >&2; exit 1; }
 ok_step() { printf '\n%s==> %s%s\n' "$C_C" "$*" "$C_0"; }

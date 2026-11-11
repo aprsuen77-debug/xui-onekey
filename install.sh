@@ -20,7 +20,8 @@ HERE="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 APP_DIR=/opt/xui-onekey
 STATE_DIR=/etc/xui-onekey
 BIN_DIR="${APP_DIR}/bin"
-LOG_FILE=/var/log/xui-onekey-install.log
+LOG_FILE=/var/log/routex-install.log
+XUI_LOG="$LOG_FILE"
 
 # ---------------- 默认配置（可被参数/环境变量覆盖） ----------------
 HOST_ARG=""
@@ -114,19 +115,82 @@ while [[ $# -gt 0 ]]; do
   esac
 done
 
-# ============================ 进度显示 ============================
-PROGRESS_CUR=0
-PROGRESS_TOTAL=7
-progress_step() { # $1=标题
-  PROGRESS_CUR=$((PROGRESS_CUR + 1))
-  local pct=$((PROGRESS_CUR * 100 / PROGRESS_TOTAL))
-  local fill=$((PROGRESS_CUR * 26 / PROGRESS_TOTAL))
-  local bar="" i
+# ============================ 动态进度条 ============================
+PROGRESS_PCT=0
+PROGRESS_LABEL=""
+PROGRESS_TTY=0
+[[ -t 1 ]] && PROGRESS_TTY=1
+
+# 绘制当前进度（原地重绘，不换行）
+draw_progress() {
+  local pct="${1:-$PROGRESS_PCT}" label="${2:-$PROGRESS_LABEL}" fill i bar=""
+  ((pct < 0)) && pct=0
+  ((pct > 100)) && pct=100
+  fill=$((pct * 26 / 100))
   for ((i = 0; i < 26; i++)); do
     if ((i < fill)); then bar+="█"; else bar+="░"; fi
   done
-  printf '\n%s[%s] %3d%%%s  %s\n' "$C_C" "$bar" "$pct" "$C_0" "$1"
-  printf '  %s\n' "────────────────────────────────────────────────────────"
+  if [[ "$PROGRESS_TTY" == "1" ]]; then
+    printf '\r\033[0;36m[%s] %3d%%\033[0m  %-34s' "$bar" "$pct" "$label"
+  else
+    printf '[%s] %3d%%  %s\n' "$bar" "$pct" "$label"
+  fi
+}
+
+# progress_set <百分比> <标签>
+progress_set() {
+  PROGRESS_PCT="${1:-$PROGRESS_PCT}"
+  [[ -n "${2:-}" ]] && PROGRESS_LABEL="$2"
+  draw_progress
+}
+
+# progress_wait <目标百分比> <标签> [秒数]
+# 在等待类操作里让进度条平滑爬升，避免长时间停在同一格
+progress_wait() {
+  local target="$1" label="$2" secs="${3:-3}" from cur step i
+  from="$PROGRESS_PCT"
+  cur="$from"
+  ((cur > target)) && cur="$target"
+  if ((target > from)); then
+    step=$(((target - from) / (secs * 4) + 1))
+    for ((i = 0; i < secs * 4 && cur < target; i++)); do
+      cur=$((cur + step))
+      ((cur > target)) && cur="$target"
+      draw_progress "$cur" "$label"
+      sleep 0.25
+    done
+  fi
+  PROGRESS_PCT="$target"
+  PROGRESS_LABEL="$label"
+  draw_progress
+}
+
+# progress_run <起始%> <结束%> <标签> <命令...>
+# 后台执行命令，前台每 0.4s 推进一次进度条，直到命令结束
+progress_run() {
+  local from="$1" to="$2" label="$3"
+  shift 3
+  progress_set "$from" "$label"
+  "$@" >>"$LOG_FILE" 2>&1 &
+  local pid=$! cur="$from"
+  while kill -0 "$pid" 2>/dev/null; do
+    if ((cur < to)); then
+      cur=$((cur + 1))
+      ((cur > to)) && cur="$to"
+      draw_progress "$cur" "$label"
+    fi
+    sleep 0.4
+  done
+  wait "$pid"
+  local rc=$?
+  progress_set "$to" "$label"
+  return $rc
+}
+
+# progress_done：收尾换行
+progress_done() {
+  draw_progress 100 "安装完成"
+  [[ "$PROGRESS_TTY" == "1" ]] && printf '\n'
 }
 
 # ============================ 交互菜单 ============================
@@ -224,7 +288,7 @@ detect_country_code() {
 
 # ============================ 阶段 0：预检 ============================
 stage_preflight() {
-  progress_step "环境预检"
+  progress_set 1 "环境预检"
   ok_need_root
   ok_os
   ok_arch
@@ -254,17 +318,12 @@ stage_preflight() {
   XO_HOST="$HOST_ARG"
   ok_info "对外地址: ${XO_HOST}"
 
-  # 节点名前缀用国旗（默认跟随服务器 IP 归属地）
-  local cc flag
-  cc="$(detect_country_code "$XO_HOST" || true)"
-  if [[ -n "$cc" ]]; then
-    flag="$(flag_for_country "$cc")"
-    ok_info "IP 归属地: ${cc}  ${flag}"
-    if [[ -z "$REMARK_PREFIX" ]]; then
-      REMARK_PREFIX="${flag} "
-    fi
-  else
-    ok_warn "无法识别 IP 归属地，节点名不加国旗"
+  # 节点名默认 = 服务器IP + 协议（例如 1.2.3.4-VLESS）；
+  # 想加国旗/前缀用 --remark-prefix "🇭🇰 "
+  if [[ -z "$REMARK_PREFIX" ]]; then
+    local cc
+    cc="$(detect_country_code "$XO_HOST" || true)"
+    [[ -n "$cc" ]] && ok_info "IP 归属地: ${cc}（节点名默认不带国旗）"
   fi
 
   if [[ -n "$DOMAIN_ARG" ]]; then
@@ -394,7 +453,7 @@ replace_with_routex() {
 }
 
 stage_install_panel() {
-  progress_step "安装面板（3x-ui 内核）"
+  progress_set 10 "安装面板（3x-ui 内核）"
 
   if [[ -x /usr/local/x-ui/x-ui && -f /etc/systemd/system/x-ui.service ]]; then
     PANEL_FRESH_INSTALL=0
@@ -427,10 +486,11 @@ stage_install_panel() {
     )
     [[ -n "$ADMIN_USER" ]] && _xui_env+=("XUI_USERNAME=$ADMIN_USER")
     [[ -n "$ADMIN_PASS" ]] && _xui_env+=("XUI_PASSWORD=$ADMIN_PASS")
-    env "${_xui_env[@]}" bash "$tmp" </dev/null >>"$LOG_FILE" 2>&1 || {
-        ok_warn "安装日志末尾:"
+    progress_run 12 34 "安装 3x-ui（下载 + 解包 + 建库）" \
+      env "${_xui_env[@]}" bash "$tmp" || {
+        ok_warn "安装失败，日志末尾："
         tail -30 "$LOG_FILE" >&2
-        ok_die "3x-ui 安装失败"
+        ok_die "3x-ui 安装失败（完整日志：${LOG_FILE}）"
       }
     rm -f "$tmp" "${tmp}.bak"
     PANEL_FRESH_INSTALL=1
@@ -438,6 +498,7 @@ stage_install_panel() {
   fi
 
   # 等待服务就绪
+  progress_wait 38 "等待面板启动" 3
   local i
   for i in $(seq 1 60); do
     if ss -ltn 2>/dev/null | grep -q ":${PANEL_PORT} " || curl -fsS -o /dev/null --max-time 2 "http://127.0.0.1:${PANEL_PORT}/" 2>/dev/null; then
@@ -469,6 +530,25 @@ stage_install_panel() {
     ADMIN_PASS="$(sed -n 's/.*Password: *\([A-Za-z0-9_-]\{6,\}\).*/\1/p' <<<"$clean" | tail -1)"
   fi
   [[ -n "$ADMIN_USER" ]] || ADMIN_USER="admin"
+
+  # 确保面板走 HTTP：清掉历史版本留下的证书配置（CLI 不接受空值，只能改库）
+  if [[ -f /etc/x-ui/x-ui.db ]] && command -v sqlite3 >/dev/null 2>&1; then
+    local has_cert
+    has_cert="$(sqlite3 /etc/x-ui/x-ui.db "SELECT value FROM settings WHERE key IN ('webCertFile','webKeyFile','subCertFile','subKeyFile') AND value<>'' LIMIT 1;" 2>/dev/null)"
+    if [[ -n "$has_cert" ]]; then
+      ok_info "检测到面板证书配置，按新策略切回 HTTP"
+      sqlite3 /etc/x-ui/x-ui.db "UPDATE settings SET value='' WHERE key IN ('webCertFile','webKeyFile','subCertFile','subKeyFile');" 2>/dev/null || true
+      systemctl restart x-ui
+      sleep 4
+      # 门户之前可能被改成连 https，一并纠正回 http
+      local pj="${STATE_DIR}/portal.json"
+      if [[ -f "$pj" ]] && command -v jq >/dev/null 2>&1; then
+        jq --arg p "http://127.0.0.1:${PANEL_PORT}" --arg s "http://127.0.0.1:${SUB_PORT}" \
+           '.panel = $p | .subUpstream = $s' "$pj" > "${pj}.tmp" 2>/dev/null \
+          && mv -f "${pj}.tmp" "$pj" && chmod 600 "$pj"
+      fi
+    fi
+  fi
 
   replace_with_routex
 
@@ -522,7 +602,7 @@ stage_certificates() {
 
 # ============================ 阶段 3：订阅服务配置 ============================
 stage_subscription() {
-  progress_step "配置订阅服务"
+  progress_set 40 "配置订阅服务"
 
   local cur merged
   cur="$(xo_api_ok POST 'setting/all' '{}')"
@@ -568,7 +648,7 @@ stage_subscription() {
     ok_log "订阅路径已固定为 /s/ /json/ /clash/，订阅地址统一走 ${PORTAL_PORT}"
   fi
 
-  # 重启订阅服务（x-ui 会随面板重启重建监听）
+  progress_wait 47 "重启订阅服务" 2
   systemctl restart x-ui >/dev/null 2>&1 || true
   sleep 2
   ok_info "订阅服务监听: 0.0.0.0:${SUB_PORT}"
@@ -576,15 +656,16 @@ stage_subscription() {
 
 # ============================ 阶段 4：建节点 ============================
 stage_nodes() {
-  progress_step "创建节点"
+  progress_set 50 "创建节点"
   if [[ "$SKIP_NODES" == "1" ]]; then ok_info "已跳过"; return 0; fi
 
-  bash "${HERE}/scripts/provision-nodes.sh" \
+  progress_run 52 72 "创建 7 个协议节点" \
+    bash "${HERE}/scripts/provision-nodes.sh" \
     --host "$XO_HOST" \
     --protocols "$PROTOCOLS" \
     --cert-dir "${STATE_DIR}/certs" \
     --remark-prefix "$REMARK_PREFIX" \
-    --reality-sni "$REALITY_SNI"
+    --reality-sni "$REALITY_SNI" || ok_die "节点创建失败（日志：${LOG_FILE}）"
 
   # 记录订阅 ID 供门户使用
   # shellcheck disable=SC1091
@@ -594,7 +675,7 @@ stage_nodes() {
 
 # ============================ 阶段 5：8080 门户 ============================
 stage_portal() {
-  progress_step "部署节点门户"
+  progress_set 75 "部署节点门户"
   if [[ "$SKIP_PORTAL" == "1" ]]; then ok_info "已跳过"; return 0; fi
 
   local bin="${BIN_DIR}/xui-portal"
@@ -663,8 +744,10 @@ ProtectSystem=full
 WantedBy=multi-user.target
 EOF
 
+  progress_set 80 "安装门户服务" 
   systemctl daemon-reload
   systemctl enable xui-portal >/dev/null 2>&1
+  progress_set 86 "启动门户"
   systemctl restart xui-portal
   sleep 1
   systemctl is-active --quiet xui-portal || {
@@ -679,6 +762,7 @@ EOF
     [[ "$code" == "200" ]] && break
     sleep 1
   done
+  progress_wait 90 "门户自检" 2
   if [[ "$code" == "200" ]]; then
     ok_log "门户已启动并自检通过: http://${XO_HOST}:${PORTAL_PORT}/p/${PORTAL_TOKEN}/"
   else
@@ -687,69 +771,9 @@ EOF
   fi
 }
 
-# ============================ 面板 HTTPS ============================
-stage_panel_https() {
-  progress_step "面板启用 HTTPS"
-
-  local certdir="${STATE_DIR}/certs"
-  local cert="${certdir}/panel.crt" key="${certdir}/panel.key"
-  mkdir -p "$certdir"
-
-  if [[ -s "$cert" && -s "$key" ]]; then
-    ok_info "复用已有面板证书"
-  else
-    ok_info "生成面板自签证书（CN=${XO_HOST}）"
-    openssl req -x509 -newkey rsa:2048 -nodes -sha256 -days 3650 \
-      -keyout "$key" -out "$cert" -subj "/CN=${XO_HOST}" \
-      -addext "subjectAltName=IP:${XO_HOST}" >/dev/null 2>&1 \
-      || openssl req -x509 -newkey rsa:2048 -nodes -sha256 -days 3650 \
-           -keyout "$key" -out "$cert" -subj "/CN=${XO_HOST}" >/dev/null 2>&1
-    chmod 600 "$key"
-  fi
-
-  /usr/local/x-ui/x-ui setting -webCert "$cert" -webCertKey "$key" >/dev/null 2>&1 || {
-    ok_warn "写入证书失败，面板继续走 HTTP"
-    return 0
-  }
-  systemctl restart x-ui
-  sleep 4
-
-  if curl -fsSk -o /dev/null --max-time 5 "https://127.0.0.1:${PANEL_PORT}${XO_BASE_PATH:-/}" 2>/dev/null; then
-    ok_log "面板已启用 HTTPS（自签证书，浏览器首次访问需点“继续访问”）"
-  else
-    ok_warn "HTTPS 探活失败，回滚到 HTTP"
-    /usr/local/x-ui/x-ui setting -webCert "" -webCertKey "" >/dev/null 2>&1
-    systemctl restart x-ui
-    sleep 3
-    return 0
-  fi
-
-  # 门户要跟着改成 https，否则它拉不到面板
-  local pj="${STATE_DIR}/portal.json"
-  if [[ -f "$pj" ]] && command -v jq >/dev/null 2>&1; then
-    # 面板切 HTTPS 后，3x-ui 的订阅服务(2096)也会跟着走 HTTPS，门户反代要同步改
-    jq --arg p "https://127.0.0.1:${PANEL_PORT}" --arg s "https://127.0.0.1:${SUB_PORT}" \
-       '.panel = $p | .subUpstream = $s' "$pj" > "${pj}.tmp" 2>/dev/null \
-      && mv -f "${pj}.tmp" "$pj" && chmod 600 "$pj"
-    systemctl restart xui-portal >/dev/null 2>&1 || true
-    sleep 2
-    local code
-    code="$(curl -s -o /dev/null -w '%{http_code}' --max-time 5 "http://127.0.0.1:${PORTAL_PORT}/p/${PORTAL_TOKEN}/" 2>/dev/null || true)"
-    if [[ "$code" == "200" ]]; then
-      ok_log "门户已跟随切换到 HTTPS 面板"
-    else
-      ok_warn "门户返回 ${code}，检查 journalctl -u xui-portal"
-    fi
-  fi
-
-  # 后续 API 调用改走 https
-  XO_PANEL_URL="https://127.0.0.1:${PANEL_PORT}"
-  PANEL_SCHEME="https"
-}
-
 # ============================ 阶段 6：收尾 ============================
 stage_finish() {
-  progress_step "收尾"
+  progress_set 92 "收尾"
 
   local ports=("${PORTAL_PORT}/tcp" "${PANEL_PORT}/tcp")
   local p
@@ -774,40 +798,28 @@ stage_finish() {
 
   local sum="${STATE_DIR}/summary.txt"
   {
-    echo "=============== xui-onekey 安装结果 $(date '+%F %T') ==============="
-    echo "面板地址   : ${PANEL_SCHEME:-http}://${XO_HOST}:${PANEL_PORT}${XO_BASE_PATH}"
+    echo "面板地址   : http://${XO_HOST}:${PANEL_PORT}${XO_BASE_PATH}"
     echo "面板账号   : ${ADMIN_USER}"
-    if [[ "${PANEL_FRESH_INSTALL:-1}" == "1" ]]; then
-      echo "面板密码   : ${ADMIN_PASS}"
-    else
-      echo "面板密码   : 沿用原有密码（如需重置：x-ui setting -username admin -password 新密码）"
-    fi
-    if [[ "$MODE" == "panel" ]]; then
-      echo "安装模式   : 仅面板（未创建节点，可随时运行脚本选 3 补建）"
-    else
-      echo "门户地址   : http://${XO_HOST}:${PORTAL_PORT}/p/${PORTAL_TOKEN}/"
-      echo "订阅地址   : http://${XO_HOST}:${PORTAL_PORT}/sub/${XO_CLIENT_SUBID:-}"
-      echo "Clash 订阅 : http://${XO_HOST}:${PORTAL_PORT}/clash/${XO_CLIENT_SUBID:-}"
-      echo "Sing-box   : http://${XO_HOST}:${PORTAL_PORT}/json/${XO_CLIENT_SUBID:-}"
-      echo "节点 UUID  : ${XO_CLIENT_UUID:-}"
-      echo "节点协议   : ${PROTOCOLS}"
-    fi
-    echo "-----------------------------------------------"
-    echo "重跑建节点 : bash ${HERE}/scripts/provision-nodes.sh --host ${XO_HOST}"
-    echo "查看链接   : cat ${STATE_DIR}/links.txt"
-    echo "重启面板   : systemctl restart x-ui"
-    echo "重启门户   : systemctl restart xui-portal"
-    echo "==============================================="
+    echo "面板密码   : ${ADMIN_PASS}"
+    echo "门户地址   : http://${XO_HOST}:${PORTAL_PORT}/p/${PORTAL_TOKEN}/"
+    echo "---"
+    echo "订阅地址   : http://${XO_HOST}:${PORTAL_PORT}/sub/${XO_CLIENT_SUBID:-}"
+    echo "Clash 订阅 : http://${XO_HOST}:${PORTAL_PORT}/clash/${XO_CLIENT_SUBID:-}"
+    echo "Sing-box   : http://${XO_HOST}:${PORTAL_PORT}/json/${XO_CLIENT_SUBID:-}"
+    echo "节点 UUID  : ${XO_CLIENT_UUID:-}"
+    echo "日志       : ${LOG_FILE}"
   } >"$sum"
   chmod 600 "$sum"
 
-  echo
-  sed -n '1,20p' "$sum"
-  echo
-  if command -v qrencode >/dev/null 2>&1 && [[ -n "${XO_CLIENT_SUBID:-}" ]]; then
-    ok_info "订阅二维码（手机扫码直接导入）:"
-    qrencode -t ANSIUTF8 "http://${XO_HOST}:${PORTAL_PORT}/sub/${XO_CLIENT_SUBID}" || true
-  fi
+  # 终端只输出这 5 行（其余细节在 summary.txt 和日志里）
+  progress_done
+  printf '\n'
+  printf '  %s面板地址%s  http://%s:%s%s\n' "$C_G" "$C_0" "$XO_HOST" "$PANEL_PORT" "$XO_BASE_PATH"
+  printf '  %s用户名%s    %s\n' "$C_G" "$C_0" "$ADMIN_USER"
+  printf '  %s密码%s      %s\n' "$C_G" "$C_0" "$ADMIN_PASS"
+  printf '  %s门户地址%s  http://%s:%s/p/%s/\n' "$C_G" "$C_0" "$XO_HOST" "$PORTAL_PORT" "$PORTAL_TOKEN"
+  printf '\n'
+  printf '  %s详细信息：%s %s\n\n' "$C_B" "$C_0" "$sum"
   ok_log "全部完成。结果已存 ${sum}"
 }
 
@@ -829,7 +841,6 @@ main() {
       stage_subscription
       stage_nodes
       stage_portal
-      stage_panel_https
       stage_finish
       ;;
   esac
