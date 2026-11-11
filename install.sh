@@ -44,7 +44,7 @@ MODE=""                 # panel | full | nodes | upgrade | uninstall（空 = 由
 # routex 定制面板的发布位置：改成你自己的 GitHub 仓库 / OSS 即可
 #   GitHub Release：https://github.com/<user>/<repo>/releases/latest/download/x-ui-linux-amd64
 #   自建 OSS：    https://your-oss.example.com/routex/x-ui-linux-amd64
-ROUTEX_BIN_URL="${XO_ROUTEX_BIN_URL:-https://github.com/yourname/routex-panel/releases/latest/download/x-ui-linux-amd64}"
+ROUTEX_BIN_URL="${XO_ROUTEX_BIN_URL:-https://github.com/aprsuen77-debug/routex-panel/releases/latest/download/x-ui-linux-amd64}"
 ROUTEX_REQUIRED="${XO_ROUTEX_REQUIRED:-1}"   # 1=下不到就报错退出；0=回退官方面板
 # 显式参数标记：重跑时 state.env 不能覆盖用户这次给的参数
 EXPLICIT_PROTOCOLS=0

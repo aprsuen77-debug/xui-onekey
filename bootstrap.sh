@@ -12,7 +12,7 @@
 # ============================================================================
 set -Eeuo pipefail
 
-REPO="${XO_REPO:-yourname/xui-onekey}"        # ← 改成你自己的 GitHub 仓库
+REPO="${XO_REPO:-aprsuen77-debug/xui-onekey}"        # ← 改成你自己的 GitHub 仓库
 REF="${XO_REF:-main}"
 DEST="${XO_SRC_DIR:-/opt/xui-onekey-src}"
 MIRROR="${XO_MIRROR_GH_PREFIX:-}"

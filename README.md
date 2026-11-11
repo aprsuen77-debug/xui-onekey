@@ -65,23 +65,23 @@ bash <(curl -fsSL http://你的服务器:8090/install-routex.sh)
 
 ```bash
 # 交互菜单（推荐，能选 1/2）
-bash <(curl -fsSL https://raw.githubusercontent.com/yourname/xui-onekey/main/bootstrap.sh)
+bash <(curl -fsSL https://raw.githubusercontent.com/aprsuen77-debug/xui-onekey/main/bootstrap.sh)
 
 # 非交互（直接完整安装）
-curl -fsSL https://raw.githubusercontent.com/yourname/xui-onekey/main/bootstrap.sh | bash -s -- --host 1.2.3.4
+curl -fsSL https://raw.githubusercontent.com/aprsuen77-debug/xui-onekey/main/bootstrap.sh | bash -s -- --host 1.2.3.4
 ```
 
 国内机器（GitHub 直连大概率超时）：
 
 ```bash
-curl -fsSL https://ghproxy.net/https://raw.githubusercontent.com/yourname/xui-onekey/main/bootstrap.sh | \
+curl -fsSL https://ghproxy.net/https://raw.githubusercontent.com/aprsuen77-debug/xui-onekey/main/bootstrap.sh | \
   XO_MIRROR_GH_PREFIX=https://ghproxy.net/ bash -s -- --host 1.2.3.4
 ```
 
 ### 方式 B：git clone 后执行
 
 ```bash
-git clone https://github.com/yourname/xui-onekey.git
+git clone https://github.com/aprsuen77-debug/xui-onekey.git
 cd xui-onekey
 bash install.sh --host 1.2.3.4
 ```
