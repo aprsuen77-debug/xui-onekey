@@ -417,13 +417,17 @@ stage_install_panel() {
     fi
     chmod +x "$tmp"
 
-    ok_info "非交互安装（用户名 ${ADMIN_USER}，端口 ${PANEL_PORT}）"
-    XUI_NONINTERACTIVE=1 \
-    ${ADMIN_USER:+XUI_USERNAME="$ADMIN_USER"} \
-    ${ADMIN_PASS:+XUI_PASSWORD="$ADMIN_PASS"} \
-    XUI_PANEL_PORT="$PANEL_PORT" \
-    XUI_WEB_BASE_PATH="$WEB_BASE_PATH" \
-      bash "$tmp" </dev/null >>"$LOG_FILE" 2>&1 || {
+    ok_info "非交互安装（端口 ${PANEL_PORT}，账号密码由 3x-ui 自动生成）"
+    # 用 env 数组合成环境变量：直接写 ${VAR:+A=b} \ 续行在变量为空时会产生空命令，bash 会报
+    # "XUI_PANEL_PORT=20000: command not found"
+    local -a _xui_env=(
+      XUI_NONINTERACTIVE=1
+      XUI_PANEL_PORT="$PANEL_PORT"
+      XUI_WEB_BASE_PATH="$WEB_BASE_PATH"
+    )
+    [[ -n "$ADMIN_USER" ]] && _xui_env+=("XUI_USERNAME=$ADMIN_USER")
+    [[ -n "$ADMIN_PASS" ]] && _xui_env+=("XUI_PASSWORD=$ADMIN_PASS")
+    env "${_xui_env[@]}" bash "$tmp" </dev/null >>"$LOG_FILE" 2>&1 || {
         ok_warn "安装日志末尾:"
         tail -30 "$LOG_FILE" >&2
         ok_die "3x-ui 安装失败"
