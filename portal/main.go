@@ -156,7 +156,7 @@ func apiURL(path string) string {
 	if bp == "" || bp == "/" {
 		return fmt.Sprintf("%s/panel/api/%s", base, path)
 	}
-	return fmt.Sprintf("%s%s/panel/api/%s", base, strings.Trim(bp, "/"), path)
+	return fmt.Sprintf("%s/%s/panel/api/%s", base, strings.Trim(bp, "/"), path)
 }
 
 // 面板切到 HTTPS 后用的是自签证书，这里必须跳过校验，否则门户拉不到数据

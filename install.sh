@@ -33,7 +33,7 @@ SUB_PORT=2096
 PROTOCOLS="reality,hy2,xhttp,ws,trojan,ss,vmess"
 ADMIN_USER=""
 ADMIN_PASS=""
-WEB_BASE_PATH="/"
+WEB_BASE_PATH=""   # 空 = 自动生成随机路径（如 /a1b2c3d4e5/）
 PORTAL_TOKEN=""
 REMARK_PREFIX=""
 REALITY_SNI="www.microsoft.com"
@@ -70,7 +70,7 @@ usage() {
   --protocols <list>        默认 reality,hy2,xhttp,ws,trojan,ss,vmess
   --admin-user <name>       面板用户（默认由 3x-ui 随机生成）
   --admin-pass <pass>       面板密码（默认由 3x-ui 官方安装器随机生成）
-  --web-base-path <path>    面板路径，默认 /
+  --web-base-path <path>    面板路径（默认自动生成随机路径，传 / 则用根路径）
   --portal-token <token>    门户访问令牌（默认随机，门户地址 /p/<token>/）
   --remark-prefix <s>       节点备注前缀（默认自动用服务器 IP 所属国家的国旗）
   --reality-sni <domain>    Reality 伪装域名，默认 www.microsoft.com
@@ -352,6 +352,11 @@ stage_preflight() {
   # 账号密码：不传就交给 3x-ui 官方安装器随机生成（和原版行为一致）
   [[ -n "$PANEL_PORT" ]] || PANEL_PORT="$(ok_pick_port 20000 60000 || echo 2053)"
   [[ -n "$PORTAL_TOKEN" ]] || PORTAL_TOKEN="$(ok_rand_hex 8)"
+  # 面板随机路径：防止直接扫 IP:端口 就能打开登录页
+  if [[ -z "$WEB_BASE_PATH" ]]; then
+    WEB_BASE_PATH="/$(ok_rand_hex 5)/"
+    ok_info "面板随机路径: ${WEB_BASE_PATH}"
+  fi
 
   ok_info "面板端口: ${PANEL_PORT} / 门户端口: ${PORTAL_PORT} / 订阅端口: ${SUB_PORT}"
 
@@ -365,6 +370,7 @@ PORTAL_PORT='${PORTAL_PORT}'
 SUB_PORT='${SUB_PORT}'
 PORTAL_TOKEN='${PORTAL_TOKEN}'
 PROTOCOLS='${PROTOCOLS}'
+WEB_BASE_PATH='${WEB_BASE_PATH}'
 EOF
   chmod 600 "${STATE_DIR}/state.env"
 }
@@ -383,6 +389,7 @@ PORTAL_PORT='${PORTAL_PORT}'
 SUB_PORT='${SUB_PORT}'
 PORTAL_TOKEN='${PORTAL_TOKEN}'
 PROTOCOLS='${PROTOCOLS}'
+WEB_BASE_PATH='${WEB_BASE_PATH}'
 EOF
   )
 }

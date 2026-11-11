@@ -117,15 +117,15 @@ bash install.sh --host 1.2.3.4 --protocols reality,hy2,ss
 
 | 项目 | 地址 |
 |---|---|
-| 面板 | `https://IP:<随机端口><basePath>`（自签证书，浏览器首次需点“继续访问”） |
+| 面板 | `http://IP:<随机端口>/<随机路径>/`（默认随机路径，防止扫端口就打开登录页） |
 | 节点门户 | `http://IP:8080/p/<随机token>/` |
 | 通用订阅 | `http://IP:8080/sub/<subId>`（客户端按 UA 自动返回 raw / clash / sing-box） |
 | Clash 订阅 | `http://IP:8080/clash/<subId>` |
 | Sing-box 订阅 | `http://IP:8080/json/<subId>` |
 
 - **面板账号密码由 3x-ui 官方安装器随机生成**（和原版行为一致），装完会打印在终端和 `summary.txt` 里；也可以用 `--admin-user` / `--admin-pass` 指定。
-- **面板默认启用 HTTPS**（自签证书，10 年有效），订阅服务和门户会跟着切换，客户端无感。
-- **节点名自动带国旗**：安装时探测服务器 IP 归属国家，用对应国旗做前缀（`🇭🇰 REALITY-443`、`🇯🇵 HY2-443` 等）。
+- **面板默认带随机路径**（如 `/a3f3ac44c0/`），直接访问 `http://IP:端口/` 是 404；想用根路径就传 `--web-base-path /`。
+- **节点名默认 = `<服务器IP>-<协议>`**（如 `1.2.3.4-VLESS`），可用 `--remark-prefix` 加国旗或前缀。
 
 全部结果落在 `/etc/xui-onekey/summary.txt`（600 权限）。
 
