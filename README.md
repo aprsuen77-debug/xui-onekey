@@ -64,6 +64,16 @@ bash <(curl -fsSL http://你的服务器:8090/install-routex.sh)
 
 `XO_SRC_URL` 有值时，`bootstrap.sh` 会自动把面板二进制也指向同一个源的 `x-ui-linux-amd64`，不需要再单独配。
 
+## 0.9 界面预览
+
+| 面板登录 | 仪表盘 |
+|---|---|
+| ![login](docs/routex-login.png) | ![dashboard](docs/routex-dashboard.png) |
+
+| 节点列表 | 8080 门户（手机） |
+|---|---|
+| ![inbounds](docs/routex-inbounds.png) | ![portal](docs/portal-light-mobile.png) |
+
 ## 1. 快速开始
 
 ### 方式 A：客户机器一条命令（交互菜单）
