@@ -33,6 +33,32 @@
 - 交互菜单需要真正的终端：`bash <(curl -fsSL <bootstrap.sh 地址>)`，不要用 `curl | bash`（stdin 是管道，弹不出菜单）。
 - 想跳过菜单直接跑：`bash install.sh --mode panel|full|nodes|upgrade|uninstall`，或环境变量 `XO_MODE=panel`。
 
+## 0.5 自建分发源（不走 GitHub 也能装）
+
+适合：先在内网/自有 VPS 上验证，或者客户机器访问 GitHub 困难。
+
+服务端（一台能公网访问的机器）放三个文件到任意静态目录：
+
+```
+x-ui-linux-amd64      # routex 面板本体（75MB）
+xui-onekey.tar.gz     # 本仓库源码包（含 bin/ 里的门户二进制）
+bootstrap.sh          # 入口脚本
+```
+
+用 nginx / caddy / `python3 -m http.server` 对外提供即可，然后客户端：
+
+```bash
+# 1) 临时指定源（不改脚本）
+XO_SRC_URL=http://你的服务器:8090/xui-onekey.tar.gz \
+XO_ROUTEX_BIN_URL=http://你的服务器:8090/x-ui-linux-amd64 \
+  bash <(curl -fsSL http://你的服务器:8090/bootstrap.sh)
+
+# 2) 或者把 install-routex.sh 里的 ROUTEX_BASE 改成你的地址，客户端只需：
+bash <(curl -fsSL http://你的服务器:8090/install-routex.sh)
+```
+
+`XO_SRC_URL` 有值时，`bootstrap.sh` 会自动把面板二进制也指向同一个源的 `x-ui-linux-amd64`，不需要再单独配。
+
 ## 1. 快速开始
 
 ### 方式 A：客户机器一条命令（交互菜单）

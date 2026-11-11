@@ -27,7 +27,10 @@ command -v curl >/dev/null 2>&1 || die "缺少 curl"
 command -v tar  >/dev/null 2>&1 || die "缺少 tar"
 
 TARBALL="https://github.com/${REPO}/archive/refs/heads/${REF}.tar.gz"
+# XO_SRC_URL 指定自己的分发地址（内网/自建 HTTP 源），配合 XO_ROUTEX_BIN_URL 可完全脱离 GitHub
+SRC_URL="${XO_SRC_URL:-}"
 URLS=(
+  "${SRC_URL}"
   "${MIRROR}${TARBALL}"
   "${TARBALL}"
 )
@@ -48,7 +51,10 @@ done
 
 rm -rf "$DEST"
 mkdir -p "$DEST"
-tar xzf "$tmp" -C "$DEST" --strip-components=1
+tar xzf "$tmp" -C "$DEST" --strip-components=1 2>/dev/null || tar xzf "$tmp" -C "$DEST" --strip-components=1
+# macOS 打包会带 ._ 扩展属性文件，清掉避免污染源码目录
+find "$DEST" -name '._*' -delete 2>/dev/null || true
+rm -rf "$DEST/__MACOSX" 2>/dev/null || true
 chmod +x "$DEST/install.sh" "$DEST"/scripts/*.sh 2>/dev/null || true
 say "源码已就位: $DEST"
 
@@ -57,6 +63,12 @@ if [[ ! -t 0 && $# -eq 0 && -z "${XO_MODE:-}" ]]; then
   warn "当前是管道执行，无法弹出交互菜单；10 秒后按「完整安装」继续"
   warn "要交互选择请改用：bash <(curl -fsSL <本脚本地址>)"
   sleep 10
+fi
+
+# 走自建源时，面板二进制默认也从同一个源取（不然还会去 GitHub 找）
+if [[ -n "$SRC_URL" && -z "${XO_ROUTEX_BIN_URL:-}" ]]; then
+  export XO_ROUTEX_BIN_URL="${SRC_URL%/*}/x-ui-linux-amd64"
+  say "面板二进制来源: ${XO_ROUTEX_BIN_URL}"
 fi
 
 # 透传所有参数；XO_MODE=panel/full/nodes/upgrade/uninstall 可直接指定模式
