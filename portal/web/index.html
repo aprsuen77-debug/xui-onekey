@@ -1,0 +1,213 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#0b0f17">
+<meta name="robots" content="noindex,nofollow">
+<title>{{.Brand}}</title>
+<style>
+  :root{
+    --bg:#0b0f17; --bg2:#111827; --card:#151c2b; --card2:#1b2436;
+    --line:#243049; --fg:#e8eefc; --dim:#8b9abcd9; --acc:#4f8cff; --acc2:#22d3ee;
+    --ok:#34d399; --warn:#fbbf24; --err:#f87171;
+    --r:16px;
+  }
+  *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+  html,body{margin:0;padding:0;background:
+     radial-gradient(1200px 600px at 15% -10%, #1b2a4a 0%, transparent 55%),
+     radial-gradient(900px 500px at 110% 10%, #123043 0%, transparent 50%),
+     var(--bg);
+     color:var(--fg);font:15px/1.55 -apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC","Hiragino Sans GB","Microsoft YaHei",sans-serif;}
+  a{color:var(--acc);text-decoration:none}
+  .wrap{max-width:860px;margin:0 auto;padding:22px 16px 64px}
+  header{display:flex;align-items:center;gap:10px;margin-bottom:18px}
+  .logo{width:38px;height:38px;border-radius:12px;background:linear-gradient(135deg,var(--acc),var(--acc2));
+        display:grid;place-items:center;font-weight:800;color:#04101f;font-size:17px;letter-spacing:.5px}
+  .brand{font-size:17px;font-weight:700;letter-spacing:.3px}
+  .sub{font-size:12px;color:var(--dim)}
+  .pill{margin-left:auto;font-size:12px;padding:5px 11px;border-radius:999px;border:1px solid var(--line);
+        color:var(--dim);display:flex;align-items:center;gap:6px;white-space:nowrap}
+  .dot{width:7px;height:7px;border-radius:50%;background:var(--ok);box-shadow:0 0 0 3px #34d39922}
+  .card{background:linear-gradient(180deg,var(--card),var(--card2));border:1px solid var(--line);
+        border-radius:var(--r);padding:16px;margin-bottom:14px}
+  h2{font-size:14px;margin:0 0 12px;color:var(--dim);font-weight:600;letter-spacing:.4px;text-transform:uppercase}
+  .stats{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
+  .stat{background:#0f1626;border:1px solid var(--line);border-radius:12px;padding:11px 12px}
+  .stat .k{font-size:11px;color:var(--dim);margin-bottom:3px}
+  .stat .v{font-size:15px;font-weight:700;font-variant-numeric:tabular-nums}
+  .bar{height:7px;border-radius:999px;background:#0b1120;overflow:hidden;margin-top:12px;border:1px solid var(--line)}
+  .bar>i{display:block;height:100%;background:linear-gradient(90deg,var(--acc),var(--acc2));width:0}
+  .btnrow{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-top:12px}
+  .btn{display:flex;align-items:center;justify-content:center;gap:6px;padding:11px 8px;border-radius:12px;
+       background:#0f1626;border:1px solid var(--line);color:var(--fg);font-size:13px;font-weight:600;cursor:pointer;
+       transition:.15s transform,.15s border-color}
+  .btn:active{transform:scale(.98)}
+  .btn.primary{background:linear-gradient(135deg,#2b6cff,#22d3ee);color:#04101f;border:none}
+  .btn:hover{border-color:#3a4b6e}
+  .apps{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:8px}
+  .app{display:flex;align-items:center;gap:9px;padding:10px 12px;border-radius:12px;background:#0f1626;
+       border:1px solid var(--line);color:var(--fg);font-size:13.5px;font-weight:600;cursor:pointer}
+  .app small{display:block;font-size:10.5px;color:var(--dim);font-weight:400}
+  .app .ic{width:26px;height:26px;border-radius:8px;background:#1c2740;display:grid;place-items:center;
+           font-size:11px;font-weight:800;color:var(--acc2)}
+  .node{display:flex;align-items:center;gap:12px;padding:13px;border-radius:12px;background:#0f1626;
+        border:1px solid var(--line);margin-bottom:8px}
+  .badge{font-size:10.5px;font-weight:800;letter-spacing:.5px;padding:4px 8px;border-radius:7px;
+         background:#1b2b4a;color:#9dc0ff;white-space:nowrap}
+  .badge.hysteria2{background:#3a1f3d;color:#f0abfc}
+  .badge.shadowsocks{background:#1d3326;color:#86efac}
+  .badge.trojan{background:#3a2a1a;color:#fcd34d}
+  .badge.vmess{background:#2a2440;color:#c4b5fd}
+  .badge.tuic{background:#0e2f33;color:#67e8f9}
+  .badge.mtproto{background:#1f2a44;color:#93c5fd}
+  .nodename{font-weight:600;font-size:14px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .nodeaddr{font-size:11.5px;color:var(--dim);font-variant-numeric:tabular-nums}
+  .nodebtns{margin-left:auto;display:flex;gap:6px}
+  .mini{padding:7px 11px;border-radius:9px;background:#182338;border:1px solid var(--line);font-size:12px;
+        font-weight:600;cursor:pointer;color:var(--fg)}
+  .hint{font-size:12px;color:var(--dim);margin-top:10px;line-height:1.7}
+  .toast{position:fixed;left:50%;bottom:28px;transform:translate(-50%,20px);background:#1b2436;border:1px solid var(--line);
+         padding:11px 18px;border-radius:12px;font-size:13px;opacity:0;pointer-events:none;transition:.22s;z-index:99}
+  .toast.show{opacity:1;transform:translate(-50%,0)}
+  .sheet{position:fixed;inset:0;background:#000a;display:none;place-items:center;z-index:100;padding:20px}
+  .sheet.show{display:grid}
+  .sheet .box{background:var(--card);border:1px solid var(--line);border-radius:18px;padding:18px;text-align:center;max-width:320px}
+  .sheet img{width:220px;height:220px;background:#fff;border-radius:12px;display:block;margin:0 auto 12px}
+  .sheet .txt{font-size:11.5px;color:var(--dim);word-break:break-all;text-align:left;max-height:70px;overflow:auto}
+  footer{text-align:center;font-size:11.5px;color:#5b6b8c;margin-top:26px;line-height:1.9}
+  @media(max-width:520px){
+    .stats{grid-template-columns:1fr 1fr}
+    .stats .stat:nth-child(3){grid-column:span 2}
+    .btnrow{grid-template-columns:1fr 1fr}
+    .btnrow .btn:first-child{grid-column:span 2}
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header>
+    <div class="logo">x</div>
+    <div>
+      <div class="brand">{{.Brand}}</div>
+      <div class="sub">{{.Host}} · 更新于 {{.Now}}</div>
+    </div>
+    <div class="pill"><span class="dot" style="{{if not .Online}}background:#f87171;box-shadow:0 0 0 3px #f8717122{{end}}"></span>{{if .Online}}运行中{{else}}无节点{{end}}</div>
+  </header>
+
+  <!-- 状态 -->
+  <section class="card">
+    <h2>订阅状态</h2>
+    <div class="stats">
+      <div class="stat"><div class="k">已使用 / 总量</div><div class="v">{{.Used}} <span style="color:#8b9abc;font-weight:500;font-size:12px">/ {{.Total}}</span></div></div>
+      <div class="stat"><div class="k">到期时间</div><div class="v">{{.Expire}}</div></div>
+      <div class="stat"><div class="k">上行 / 下行</div><div class="v" style="font-size:13px">{{.Up}} / {{.Down}}</div></div>
+    </div>
+    <div class="bar"><i id="usageBar"></i></div>
+    <div class="btnrow">
+      <button class="btn primary" data-copy="{{.SubURL}}">复制订阅链接</button>
+      <button class="btn" data-copy="{{.ClashURL}}">Clash 订阅</button>
+      <button class="btn" data-copy="{{.JSONURL}}">Sing-box</button>
+    </div>
+    <div class="hint">
+      订阅地址通用：<code style="color:#9dc0ff;word-break:break-all">{{.SubURL}}</code><br>
+      粘贴到任意客户端即可自动获取全部 {{len .Nodes}} 个节点；客户端会自动按 UA 返回 Clash / sing-box / 原始格式。
+    </div>
+  </section>
+
+  <!-- 客户端一键导入 -->
+  <section class="card">
+    <h2>一键导入（手机点开即跳转）</h2>
+    <div class="apps">
+      {{range .Apps}}
+      <a class="app" href="{{.Scheme}}">
+        <span class="ic">{{.Abbr}}</span>
+        <span>{{.Name}}<small>{{.Note}}</small></span>
+      </a>
+      {{end}}
+    </div>
+    <div class="hint">桌面端推荐 Clash Verge / Mihomo Party / v2rayN：复制上方订阅链接 → 订阅 → 粘贴 → 更新。</div>
+  </section>
+
+  <!-- 节点 -->
+  <section class="card">
+    <h2>节点列表（{{len .Nodes}}）</h2>
+    {{range .Nodes}}
+    <div class="node">
+      <span class="badge {{.Kind}}">{{.Badge}}</span>
+      <div style="min-width:0">
+        <div class="nodename">{{.Remark}}</div>
+        <div class="nodeaddr">{{.Host}}</div>
+      </div>
+      <div class="nodebtns">
+        <button class="mini" data-copy="{{.Link}}">复制</button>
+        <button class="mini" data-qr="{{.QR}}" data-link="{{.Link}}">二维码</button>
+      </div>
+    </div>
+    {{else}}
+    <div class="hint">暂无节点，等安装脚本执行完成或联系管理员。</div>
+    {{end}}
+  </section>
+
+  <footer>
+    {{.Brand}} · 单设备使用，请勿分享订阅链接<br>
+    订阅泄露等同账号泄露，可在面板重置 subId
+  </footer>
+</div>
+
+<div class="toast" id="toast">已复制</div>
+<div class="sheet" id="sheet">
+  <div class="box">
+    <img id="qrimg" alt="QR">
+    <div class="txt" id="qrtxt"></div>
+    <button class="btn" style="width:100%;margin-top:12px" onclick="document.getElementById('sheet').classList.remove('show')">关闭</button>
+  </div>
+</div>
+
+<script>
+(function(){
+  var toast=document.getElementById('toast'),t;
+  function say(m){toast.textContent=m;toast.classList.add('show');clearTimeout(t);t=setTimeout(function(){toast.classList.remove('show')},1600)}
+
+  document.addEventListener('click',function(e){
+    var b=e.target.closest('[data-copy]');
+    if(b){
+      var v=b.getAttribute('data-copy');
+      if(navigator.clipboard&&location.protocol==='https:'){navigator.clipboard.writeText(v).then(function(){say('已复制')},function(){fallback(v)})}
+      else{fallback(v)}
+      e.preventDefault();return;
+    }
+    var q=e.target.closest('[data-qr]');
+    if(q){
+      document.getElementById('qrimg').src=q.getAttribute('data-qr');
+      document.getElementById('qrtxt').textContent=q.getAttribute('data-link');
+      document.getElementById('sheet').classList.add('show');
+      e.preventDefault();return;
+    }
+    if(e.target.id==='sheet'){document.getElementById('sheet').classList.remove('show')}
+  });
+
+  function fallback(v){
+    var ta=document.createElement('textarea');ta.value=v;ta.style.position='fixed';ta.style.opacity='0';
+    document.body.appendChild(ta);ta.select();
+    try{document.execCommand('copy');say('已复制')}catch(_){say('复制失败，请长按选择')}
+    document.body.removeChild(ta);
+  }
+
+  // 用量条
+  var used="{{.Used}}", total="{{.Total}}";
+  function bytes(s){
+    if(!s)return 0;
+    var m=String(s).match(/([\d.]+)\s*([KMGTP]?B)/i);
+    if(!m)return 0;
+    var n=parseFloat(m[1]),u=(m[2]||'B').toUpperCase(),p={B:0,KB:1,MB:2,GB:3,TB:4,PB:5};
+    return n*Math.pow(1024,p[u]||0);
+  }
+  var u=bytes(used),tt=bytes(total);
+  if(tt>0){document.getElementById('usageBar').style.width=Math.min(100,(u/tt*100)).toFixed(1)+'%'}
+  else{document.getElementById('usageBar').style.width='8%'}
+})();
+</script>
+</body>
+</html>

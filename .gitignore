@@ -1,0 +1,8 @@
+# 预编译产物按需提交（安装脚本会用 ROUTEX_BIN_URL 拉面板本体）
+bin/xui-portal-linux-arm64
+bin/xui-portal-linux-armv7
+bin/xui-portal-linux-386
+bin/SHA256SUMS
+*.tgz
+*.tar.gz
+.DS_Store
